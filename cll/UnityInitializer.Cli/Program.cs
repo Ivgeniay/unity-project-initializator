@@ -1,8 +1,7 @@
 ﻿using UnityInitializer.Core.Interfaces;
-using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
 using UnityInitializer.Core.Services;
+using UnityInitializer.Core.Consts;
+using System.CommandLine;
 
 
 namespace UnityInitializer.Cli
@@ -11,19 +10,19 @@ namespace UnityInitializer.Cli
     {
         static async Task<int> Main(string[] args)
         {
-            var versionOption = new Option<string?>("-v", "--version")
+            var versionOption = new Option<string?>(CommandConstants.Options.Version.SHORT_ALIAS, CommandConstants.Options.Version.LONG_ALIAS)
             {
-                Description = "Unity version to initialize project with"
+                Description = CommandConstants.Options.Version.DESCRIPTION
             };
 
-            var listOption = new Option<bool>("-l", "--list")
+            var listOption = new Option<bool>(CommandConstants.Options.List.SHORT_ALIAS, CommandConstants.Options.List.LONG_ALIAS)
             {
-                Description = "List all available Unity versions"
+                Description = CommandConstants.Options.List.DESCRIPTION
             };
 
-            var rootCommand = new RootCommand("Unity project initializer");
+            var rootCommand = new RootCommand(CommandConstants.Messages.ROOT_COMMAND_DESCRIPTION);
 
-            var versionOptionToRemove = rootCommand.Options.FirstOrDefault(o => o.Name == "--version");
+            var versionOptionToRemove = rootCommand.Options.FirstOrDefault(o => o.Name == CommandConstants.SystemOptions.VERSION_OPTION_NAME);
             if (versionOptionToRemove != null)
             {
                 rootCommand.Options.Remove(versionOptionToRemove);
@@ -37,8 +36,6 @@ namespace UnityInitializer.Cli
                 var version = parseResult.GetValue(versionOption);
                 var list = parseResult.GetValue(listOption);
 
-                Console.WriteLine($"DEBUG: version='{version}', list={list}");
-
                 var initializer = new UnityProjectInitializer();
 
                 if (list)
@@ -49,7 +46,7 @@ namespace UnityInitializer.Cli
 
                 if (string.IsNullOrWhiteSpace(version))
                 {
-                    Console.WriteLine("Error: Version parameter is required. Use -v to specify Unity version or -l to list available versions.");
+                    Console.WriteLine(CommandConstants.Messages.VERSION_REQUIRED_ERROR);
                     return 1;
                 }
 
@@ -63,13 +60,13 @@ namespace UnityInitializer.Cli
 
         private static async Task HandleListCommand(IUnityProjectInitializer initializer)
         {
-            Console.WriteLine("Available Unity versions:");
+            Console.WriteLine(CommandConstants.Messages.AVAILABLE_VERSIONS_HEADER);
 
             var versions = await initializer.GetAvailableVersionsAsync();
 
             if (!versions.Any())
             {
-                Console.WriteLine("No Unity versions found in embedded resources.");
+                Console.WriteLine(CommandConstants.Messages.NO_VERSIONS_FOUND);
                 return;
             }
 
@@ -83,7 +80,7 @@ namespace UnityInitializer.Cli
         {
             var currentDirectory = Directory.GetCurrentDirectory();
 
-            Console.WriteLine($"Initializing Unity project version {version} in {currentDirectory}...");
+            Console.WriteLine(string.Format(CommandConstants.Messages.INITIALIZING_PROJECT, version, currentDirectory));
 
             var result = await initializer.InitializeProjectAsync(currentDirectory, version);
 
@@ -93,7 +90,7 @@ namespace UnityInitializer.Cli
             }
             else
             {
-                Console.WriteLine($"Failed: {result.Message}");
+                Console.WriteLine(string.Format(CommandConstants.Messages.INITIALIZATION_FAILED, result.Message));
             }
         }
 
